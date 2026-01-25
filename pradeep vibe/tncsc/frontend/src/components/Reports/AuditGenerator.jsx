@@ -30,8 +30,6 @@ const AuditGenerator = () => {
                 doc.setFont('helvetica', 'bold');
                 doc.text('1. Executive Summary', 14, 45);
 
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'normal');
                 const summary = [
                     ['Total Capacity', `${data.stats.totalCapacity} MT`],
                     ['Current Stock', `${data.stats.currentStock} MT`],
@@ -48,7 +46,9 @@ const AuditGenerator = () => {
                 });
 
                 // ANOMALIES
-                const lastY = doc.lastAutoTable.finalY; // Get Y position of previous table
+                // Safely get Y position
+                const lastY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 100;
+
                 doc.setFontSize(14);
                 doc.setFont('helvetica', 'bold');
                 doc.text('2. Detected Loss Anomalies', 14, lastY + 20);
@@ -72,7 +72,8 @@ const AuditGenerator = () => {
                 });
 
                 // CRITICAL INCIDENTS
-                const lastY2 = doc.lastAutoTable.finalY;
+                const lastY2 = doc.lastAutoTable ? doc.lastAutoTable.finalY : lastY + 60;
+
                 doc.setFontSize(14);
                 doc.setFont('helvetica', 'bold');
                 doc.text('3. Open Critical Incidents', 14, lastY2 + 20);
@@ -93,10 +94,12 @@ const AuditGenerator = () => {
 
                 doc.save('TNCSC_CAG_Audit_Report.pdf');
                 alert('Report Generated Successfully');
+            } else {
+                throw new Error(res.message || 'API Error');
             }
         } catch (err) {
-            console.error(err);
-            alert('Failed to generate report');
+            console.error("PDF Generation Error:", err);
+            alert(`Failed to generate report: ${err.message}`);
         } finally {
             setLoading(false);
         }

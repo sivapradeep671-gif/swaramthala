@@ -5,6 +5,7 @@ import { TrendingDown, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 const LossAnalytics = () => {
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [stats, setStats] = useState([]);
     const [selectedGodown, setSelectedGodown] = useState(null);
 
@@ -13,6 +14,8 @@ const LossAnalytics = () => {
     }, []);
 
     const fetchLossTrends = async () => {
+        setLoading(true);
+        setError(null);
         try {
             const res = await api.get('/analytics/loss-trends');
             if (res.success) {
@@ -20,15 +23,27 @@ const LossAnalytics = () => {
                 // Default to first high-risk godown or the first one
                 const risky = res.data.find(g => g.abnormalDetected);
                 setSelectedGodown(risky || res.data[0]);
+            } else {
+                setError('Failed to compute loss algorithms.');
             }
         } catch (err) {
             console.error('Failed to fetch loss analytics', err);
+            setError('Connection unavailable.');
         } finally {
             setLoading(false);
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-slate-500">Calculating Loss Algorithms...</div>;
+    if (loading) return <div className="p-8 text-center text-slate-500 animate-pulse">Calculating Loss Algorithms...</div>;
+
+    if (error) return (
+        <div className="p-8 text-center">
+            <div className="text-red-500 mb-2">{error}</div>
+            <button onClick={fetchLossTrends} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded text-sm font-bold text-slate-700">
+                Retry Calculation
+            </button>
+        </div>
+    );
 
     const highRiskCount = stats.filter(g => g.abnormalDetected).length;
     const totalLossValue = stats.reduce((acc, curr) => acc + (curr.avgLoss * 15), 0).toFixed(1); // Mock calculation: 1% = 15 Lakh

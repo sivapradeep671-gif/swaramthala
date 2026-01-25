@@ -60,27 +60,43 @@ const ConfigCard = ({ rank, officer }) => {
 const PerformanceLeaderboard = () => {
     const [officers, setOfficers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchData = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await api.get('/admin/officer-performance');
+            if (res.success) {
+                setOfficers(res.data);
+            } else {
+                setError('Failed to load scores.');
+            }
+        } catch (err) {
+            console.error(err);
+            setError('Connection failed. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const res = await api.get('/admin/officer-performance');
-                if (res.success) {
-                    setOfficers(res.data);
-                }
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchData();
     }, []);
 
     const top3 = officers.slice(0, 3);
     const rest = officers.slice(3);
 
-    if (loading) return <div className="p-8 text-center text-slate-500">Calculating Scores...</div>;
+    if (loading) return <div className="p-8 text-center text-slate-500 animate-pulse">Calculating Scores...</div>;
+
+    if (error) return (
+        <div className="p-8 text-center">
+            <div className="text-red-500 mb-2">{error}</div>
+            <button onClick={fetchData} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded text-sm font-bold text-slate-700">
+                Retry Calculation
+            </button>
+        </div>
+    );
 
     return (
         <div className="space-y-10 animate-in fade-in duration-700">

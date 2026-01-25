@@ -67,9 +67,6 @@ export const api = {
     get: async (endpoint) => {
         try {
             // Check if running on GitHub Pages (Mock Mode) or if Force Mock is enabled
-            // Also enable mock mode if we are in development but backend is unresponsive (simplified for this context)
-            // Check if running on GitHub Pages (Mock Mode) - Localhost should use real backend if available
-            // Only force mock if explicitly requested or on static host
             if (window.location.hostname.includes('github.io') || import.meta.env.VITE_USE_MOCK === 'true') {
                 console.warn('Using Mock Data for:', endpoint);
 
@@ -81,26 +78,36 @@ export const api = {
                     const id = endpoint.split('/').pop();
                     const godownProxy = MOCK_DATA['/godowns'].data.find(g => g.id === id);
                     if (godownProxy) return godownProxy;
-                    // Fallback to first if ID not found (for demo robustness)
                     return MOCK_DATA['/godowns'].data[0];
                 }
 
                 // 3. Dynamic Match: /api/stock/lots/:id
                 if (endpoint.includes('/api/stock/lots/')) {
-                    // Return random subset of lots for demo
                     return MOCK_DATA['/stock/lots'];
                 }
 
                 // 4. Movement/Partial Match
                 const partialKey = Object.keys(MOCK_DATA).find(k => endpoint.endsWith(k));
                 if (partialKey) return MOCK_DATA[partialKey];
+
+                // Mock endpoint for Leaderboard
+                if (endpoint.includes('officer-performance')) {
+                    return { success: true, data: [] }; // Return empty or mock
+                }
             }
 
-            const response = await fetch(`${API_BASE_URL}${endpoint}`);
+            // TIMEOUT CONTROLLER
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s Timeout
+
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
             if (!response.ok) throw new Error(`API Error: ${response.status}`);
             return await response.json();
         } catch (error) {
             console.error('API Request Failed:', error);
+
             // Fallback strategy for errors
             if (endpoint.includes('/godowns')) return MOCK_DATA['/godowns'];
             if (endpoint.includes('movement/outward')) return MOCK_DATA['/api/movement/outward'];
