@@ -1,0 +1,318 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String          @id @default(uuid())
+  name         String
+  email        String?         @unique
+  avatar       String
+  rating       Float           @default(0)
+  reviewCount  Int             @default(0)
+  city         String
+  verified     Boolean         @default(false)
+  responseRate Int             @default(100)
+  memberSince  String
+  
+  role         String          @default("user") // "user" or "admin"
+  isBlocked    Boolean         @default(false)
+  phone        String?         @unique  // login credential, separate from PK
+  
+  // KYC & Trust
+  kycStatus            String    @default("none") // "none", "pending", "verified", "rejected"
+  documentType         String?
+  documentUrl          String?
+  socialLinks          String?   // JSON serialized: { spotify?: string, instagram?: string, youtube?: string }
+  lastVerificationDate DateTime?
+  
+  verificationRequests VerificationRequest[]
+  
+  listings     Listing[]
+  reviews      Review[]
+  posts        CommunityPost[]
+  clubMemberships ClubMembership[]
+  ownedClubs      Club[]
+  events          EventRegistration[]
+  
+  // Phase 2 Relations
+  ordersAsBuyer    Order[]    @relation("BuyerOrders")
+  ordersAsSeller   Order[]    @relation("SellerOrders")
+  messagesSent     Message[]  @relation("Sender")
+  messagesReceived Message[]  @relation("Receiver")
+  favoriteRecords  Favorite[]
+  addresses        Address[]
+  sessions         Session[]
+
+  followers UserFollow[] @relation("Followers")
+  following UserFollow[] @relation("Following")
+  reports   Report[]
+  notifications Notification[]
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  type      String   // "message", "order", "alert", "promotion", "moderation"
+  title     String
+  content   String
+  link      String?  // Optional URL to navigate to
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationRequest {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  status          String   @default("pending") // "pending", "approved", "rejected"
+  documentType    String
+  documentUrl     String
+  socialLinks     String?
+  rejectionReason String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Listing {
+  id           String   @id @default(uuid())
+  title        String
+  brand        String
+  price        Float
+  rentPrice    Float?
+  category     String
+  condition    String
+  type         String
+  images       String // Array serialized as JSON string
+  description  String
+  location     String
+  views        Int      @default(0)
+  favorites    Int      @default(0) // Counter
+  createdAt    DateTime @default(now())
+  hasSoundDemo Boolean  @default(false)
+  isNew        Boolean  @default(false)
+  yearMade     Int?
+  eventDate    String?
+  tags         String // Array serialized as JSON string
+  videoUrl     String?
+  audioUrl     String?
+  latitude     Float?
+  longitude    Float?
+  
+  // Moderation & Status
+  isApproved   Boolean  @default(true) 
+  status       String   @default("active") // active, inactive, sold, rented
+  isPromoted   Boolean  @default(false)
+  promotedAt   DateTime?
+  reportedCount Int      @default(0)
+  isFlagged    Boolean  @default(false)
+
+  sellerId     String
+  seller       User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  
+  reviews          Review[]
+  orders           Order[]
+  reports          Report[]
+  favoriteRecords  Favorite[]
+  messages         Message[]
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  reporterId  String
+  reporter    User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  reason      String
+  details     String?
+  status      String   @default("pending") // pending, resolved, dismissed
+  createdAt   DateTime @default(now())
+}
+
+model CommunityPost {
+  id        String   @id @default(uuid())
+  type      String
+  content   String
+  listingId String?
+  likes     Int      @default(0)
+  comments  Int      @default(0)
+  time      String
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  clubId    String?
+  club      Club?    @relation(fields: [clubId], references: [id], onDelete: Cascade)
+}
+
+model Club {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  image       String?
+  category    String
+  createdAt   DateTime @default(now())
+
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+
+  members     ClubMembership[]
+  posts       CommunityPost[]
+  events      Event[]
+}
+
+model ClubMembership {
+  id        String   @id @default(uuid())
+  role      String   @default("member") // member, admin
+  joinedAt  DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  clubId    String
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clubId])
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  date        DateTime
+  location    String
+  image       String?
+  type        String   // jam, workshop, gig
+  createdAt   DateTime @default(now())
+
+  clubId      String?
+  club        Club?    @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  organizerId String
+  attendees   EventRegistration[]
+}
+
+model EventRegistration {
+  id        String   @id @default(uuid())
+  status    String   @default("interested") // interested, going
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+}
+
+// ───────────────────────────────────────────────
+// Phase 2 New Models
+// ───────────────────────────────────────────────
+
+model Order {
+  id        String   @id @default(uuid())
+  amount    Float
+  status    String   @default("pending") // pending, accepted, completed, rejected, cancelled
+  type      String   // buy, rent
+  
+  startDate String?  // For rentals
+  endDate   String?  // For rentals
+  
+  createdAt DateTime @default(now())
+
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  
+  buyerId   String
+  buyer     User     @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Cascade)
+  
+  sellerId  String
+  seller    User     @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  review    Review?
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  content    String
+  createdAt  DateTime @default(now())
+  isRead     Boolean  @default(false)
+  
+  senderId   String
+  sender     User     @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  
+  receiverId String
+  receiver   User     @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  listingId  String?
+  listing    Listing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  street    String
+  city      String
+  state     String
+  pincode   String
+  isDefault Boolean  @default(false)
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int      // 1 to 5
+  comment   String?
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  orderId   String?  @unique
+  order     Order?   @relation(fields: [orderId], references: [id])
+}
+
+model UserFollow {
+  id          String   @id @default(uuid())
+  followerId  String
+  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+}
