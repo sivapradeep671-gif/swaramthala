@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ProductService, ProductWithDetails } from '@/lib/services';
-import { Filter, ArrowDownUp } from 'lucide-react';
+import { Filter, ArrowDownUp, X } from 'lucide-react';
 import { SplitText } from '@/components/motion/SplitText';
 import { FilterSidebar } from '@/components/ecommerce/FilterSidebar';
 import { ProductCard } from '@/components/ecommerce/ProductCard';
@@ -46,6 +46,53 @@ function ShopContent() {
     else current.delete('sort');
     router.push(`${window.location.pathname}?${current.toString()}`, { scroll: false });
     setShowSortDropdown(false);
+  };
+
+  const activeFilters = (() => {
+    const filters: { key: string; value: string; label: string }[] = [];
+    const category = searchParams.get('category');
+    if (category) category.split(',').forEach(c => filters.push({ key: 'category', value: c, label: c }));
+    
+    const brand = searchParams.get('brand');
+    if (brand) brand.split(',').forEach(b => filters.push({ key: 'brand', value: b, label: b }));
+
+    const gender = searchParams.get('gender');
+    if (gender) filters.push({ key: 'gender', value: gender, label: gender.charAt(0).toUpperCase() + gender.slice(1) });
+
+    const sale = searchParams.get('sale');
+    if (sale === 'true') filters.push({ key: 'sale', value: 'true', label: 'Sale Items' });
+
+    const colors = searchParams.get('colors');
+    if (colors) colors.split(',').forEach(c => filters.push({ key: 'colors', value: c, label: c }));
+
+    const sizes = searchParams.get('sizes');
+    if (sizes) sizes.split(',').forEach(s => filters.push({ key: 'sizes', value: s, label: `Size ${s}` }));
+
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+    if (minPrice || maxPrice) {
+      if (!minPrice) filters.push({ key: 'price', value: 'price', label: `Under ₹${maxPrice}` });
+      else if (!maxPrice) filters.push({ key: 'price', value: 'price', label: `Over ₹${minPrice}` });
+      else filters.push({ key: 'price', value: 'price', label: `₹${minPrice} - ₹${maxPrice}` });
+    }
+    return filters;
+  })();
+
+  const removeFilter = (key: string, value: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const current = new URLSearchParams(Array.from(searchParams.entries()) as any);
+    if (key === 'price') {
+      current.delete('minPrice');
+      current.delete('maxPrice');
+    } else if (key === 'sale' || key === 'gender') {
+      current.delete(key);
+    } else {
+      const existing = current.get(key)?.split(',') || [];
+      const next = existing.filter(v => v !== value);
+      if (next.length > 0) current.set(key, next.join(','));
+      else current.delete(key);
+    }
+    router.push(`${window.location.pathname}?${current.toString()}`, { scroll: false });
   };
 
   return (
@@ -105,6 +152,32 @@ function ShopContent() {
             </div>
           </div>
         </div>
+
+        {/* Active Filter Pills */}
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-8">
+            {activeFilters.map(filter => (
+              <span 
+                key={`${filter.key}-${filter.value}`}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary text-sm font-medium"
+              >
+                {filter.label}
+                <button 
+                  onClick={() => removeFilter(filter.key, filter.value)}
+                  className="p-0.5 hover:bg-background rounded-full transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+            <button 
+              onClick={() => router.push('/shop', { scroll: false })}
+              className="text-sm font-bold underline underline-offset-4 decoration-border hover:decoration-primary transition-colors ml-2"
+            >
+              Clear All
+            </button>
+          </div>
+        )}
 
         {/* Product Grid */}
         {loading ? (

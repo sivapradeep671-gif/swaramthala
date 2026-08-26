@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ProductService } from '@/lib/services';
-import { cn } from '@/lib/utils';
+import { cn, getColorHex } from '@/lib/utils';
 import { X, Check } from 'lucide-react';
 
 interface FilterOptions {
@@ -174,16 +174,28 @@ export function FilterSidebar({ isMobile = false, onClose }: { isMobile?: boolea
         {options.colors.length > 0 && (
           <div>
             <h3 className="font-bold uppercase tracking-widest text-sm mb-4">Color</h3>
-            <div className="flex flex-wrap gap-2">
-              {options.colors.map(c => (
-                <button
-                  key={c}
-                  onClick={() => updateParam('colors', c, true)}
-                  className={cn("px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors", activeColors.includes(c) ? "bg-primary border-primary text-primary-foreground" : "border-border hover:border-primary")}
-                >
-                  {c}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-3">
+              {options.colors.map(c => {
+                const hex = getColorHex(c);
+                const isActive = activeColors.includes(c);
+                return (
+                  <button
+                    key={c}
+                    onClick={() => updateParam('colors', c, true)}
+                    className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                      isActive ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "ring-1 ring-border hover:ring-primary/50",
+                      hex === '#ffffff' && "border border-border"
+                    )}
+                    style={{ background: hex }}
+                    title={c}
+                  >
+                    {isActive && (
+                      <Check className={cn("w-4 h-4", ['White', 'Yellow', 'Beige'].includes(c) ? 'text-black' : 'text-white')} />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
