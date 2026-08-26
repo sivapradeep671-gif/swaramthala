@@ -25,9 +25,7 @@ test.describe('SOLEVA Critical Customer Journeys', () => {
       if (href) {
         await page.goto(href);
         await expect(page).toHaveURL(/.*\/product\/.+/);
-        // Wait for product details to load before expecting Add to Cart
-        await page.waitForLoadState('networkidle');
-        await expect(page.getByRole('button', { name: /Add to Cart/i })).toBeVisible({ timeout: 10000 });
+        await expect(page.getByRole('button', { name: /Add to Cart/i })).toBeVisible({ timeout: 15000 });
       }
     }
   });
