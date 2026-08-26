@@ -43,6 +43,7 @@ import { Cursor } from "@/components/motion/Cursor";
 import { CartDrawer } from "@/components/ecommerce/CartDrawer";
 import { WishlistDrawer } from "@/components/navigation/WishlistDrawer";
 import { ToastProvider } from "@/components/ui/ToastProvider";
+import { Analytics } from "@vercel/analytics/react";
 
 export default function RootLayout({
   children,
@@ -62,6 +63,7 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
+          <Analytics />
         </LenisWrapper>
       </body>
     </html>
