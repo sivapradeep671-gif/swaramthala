@@ -37,7 +37,7 @@ export interface Listing {
   location: string;
   views: number;
   favorites: number;
-  createdAt: string;
+  createdAt: string | Date;
   hasSoundDemo: boolean;
   isNew: boolean;
   isPromoted?: boolean;

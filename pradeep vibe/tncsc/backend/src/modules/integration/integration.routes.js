@@ -1,5 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const { protect } = require('../../middleware/auth.middleware');
+
+router.use(protect);
 
 /**
  * Mock Service for External Tamil Nadu Government APIs

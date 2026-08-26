@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../../database/db');
+const { protect } = require('../../middleware/auth.middleware');
 
 // Get all trips
 router.get('/', async (req, res) => {
@@ -13,8 +14,8 @@ router.get('/driver/:id', async (req, res) => {
     const trips = await db.find('trips', t => t.driverId == req.params.id);
     res.json({ success: true, data: trips });
 });
-// Create a new trip (Consignment)
-router.post('/', async (req, res) => {
+// Create a new trip (Consignment) - Protected
+router.post('/', protect, async (req, res) => {
     const { truckId, driverId, origin, destination } = req.body;
 
     // Basic validation
@@ -58,8 +59,8 @@ router.patch('/:id', async (req, res) => {
     res.json({ success: true, data: updated });
 });
 
-// Start a trip
-router.post('/:id/start', async (req, res) => {
+// Start a trip - Protected
+router.post('/:id/start', protect, async (req, res) => {
     const trip = await db.update('trips', req.params.id, {
         status: 'Started',
         startTime: new Date().toISOString()
@@ -76,10 +77,16 @@ router.post('/:id/location', async (req, res) => {
 
     // Mock geofence logic: if lng > 80 (just a dummy check), violation
     const violation = lng > 80.5;
+
+    // Append to route history
+    const newLocation = { lat, lng, timestamp: new Date().toISOString() };
+    const routeHistory = trip.routeHistory ? [...trip.routeHistory, newLocation] : [newLocation];
+
     const updated = await db.update('trips', req.params.id, {
         lastLat: lat,
         lastLng: lng,
-        geofenceViolation: violation
+        geofenceViolation: violation,
+        routeHistory // Save history
     });
 
     if (violation) {
@@ -94,6 +101,14 @@ router.post('/:id/location', async (req, res) => {
     }
 
     res.json({ success: true, data: updated, violation });
+});
+
+// Get Trip Route History
+router.get('/:id/route', async (req, res) => {
+    const trip = await db.findOne('trips', t => t.id == req.params.id);
+    if (!trip) return res.status(404).json({ success: false, message: 'Trip not found' });
+
+    res.json({ success: true, data: trip.routeHistory || [] });
 });
 
 // Confirm delivery

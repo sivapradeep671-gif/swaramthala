@@ -38,6 +38,9 @@ export interface SearchParams {
 export const ProductService = {
   async getProducts(limit = 12): Promise<ProductWithDetails[]> {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project') || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error("CODE FIX COMPLETE — VERCEL ENVIRONMENT CONFIGURATION REQUIRED: Supabase URL must be configured for production.");
+      }
       console.warn("Using mock products because Supabase URL is a placeholder.");
       return limit ? mockProducts.slice(0, limit) : mockProducts;
     }
@@ -76,7 +79,9 @@ export const ProductService = {
     let allProducts: ProductWithDetails[] = [];
     
     const isMock = !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder');
-
+    if (isMock && process.env.NODE_ENV === 'production') {
+      throw new Error("CODE FIX COMPLETE — VERCEL ENVIRONMENT CONFIGURATION REQUIRED: Supabase URL must be configured for production.");
+    }
     if (!isMock && params.query) {
       const { data, error } = await (supabase.rpc as any)('search_products', { search_term: params.query })
         .select(`
@@ -170,6 +175,9 @@ export const ProductService = {
   async getRelatedProducts(productId: string, limit = 4): Promise<ProductWithDetails[]> {
     const isMock = !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder');
     if (isMock) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error("CODE FIX COMPLETE — VERCEL ENVIRONMENT CONFIGURATION REQUIRED: Supabase URL must be configured for production.");
+      }
       return mockProducts.filter(p => p.id !== productId).slice(0, limit);
     }
 
@@ -226,6 +234,9 @@ export const ProductService = {
 
   async getProductBySlug(slug: string): Promise<ProductWithDetails | null> {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project') || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error("CODE FIX COMPLETE — VERCEL ENVIRONMENT CONFIGURATION REQUIRED: Supabase URL must be configured for production.");
+      }
       const products = await this.getProducts();
       return products.find(p => p.slug === slug) || null;
     }
@@ -262,6 +273,9 @@ export const ProductService = {
 
   async getProductById(id: string): Promise<ProductWithDetails | null> {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project') || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error("CODE FIX COMPLETE — VERCEL ENVIRONMENT CONFIGURATION REQUIRED: Supabase URL must be configured for production.");
+      }
       const products = await this.getProducts();
       return products.find(p => p.id === id) || null;
     }

@@ -1,8 +1,27 @@
-import React, { useState } from 'react';
-import { api } from '../../services/api';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const IntegrationsHub = () => {
     const [activeTab, setActiveTab] = useState('EPDS');
+    const [epdsData, setEpdsData] = useState(null);
+    const [edpcData, setEdpcData] = useState(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Fetch Mock EPDS Data
+                const resEpds = await axios.get('/api/v1/integrations/epds/fps/FPS001');
+                if (resEpds.data.success) setEpdsData(resEpds.data.data);
+
+                // Fetch Mock EDPC Data
+                const resEdpc = await axios.get('/api/v1/integrations/edpc/rates');
+                if (resEdpc.data.success) setEdpcData(resEdpc.data.data);
+            } catch (error) {
+                console.error("Integration Fetch Failed", error);
+            }
+        };
+        fetchData();
+    }, []);
 
     const pillars = [
         {
@@ -29,7 +48,8 @@ const IntegrationsHub = () => {
                 content: 'Automated validation between Card-level entitlement usage (from ePDS) and Stock position at each fair price shop and godown (from TNCSC inventory/PDS systems). If issued quantity to cards > stock movement records, RiskGuard flags mismatch or leakage.'
             },
             status: 'Online',
-            lastSync: '14 mins ago'
+            lastSync: 'Just now',
+            details: epdsData ? `FPS: ${epdsData.name} (${epdsData.district})` : 'Connecting...'
         },
         {
             id: 'EDPC',
@@ -55,7 +75,8 @@ const IntegrationsHub = () => {
                 content: 'Tracks both the physical side (Paddy inflow into DPCs) and the financial side (MSP payments to farmers). Highlighting abnormal drops in inflow or payment delays as risk indicators for farmer trust.'
             },
             status: 'Synced',
-            lastSync: '22 mins ago'
+            lastSync: 'Real-time',
+            details: edpcData ? `Paddy Common: ₹${edpcData.paddy_common}/qt` : 'Syncing Rates...'
         },
         {
             id: 'TNEGA',
@@ -165,6 +186,16 @@ const IntegrationsHub = () => {
                             </h4>
                             <p className="text-slate-600 text-xs font-bold leading-relaxed relative z-10">
                                 {activePillar.consistencyCheck.content}
+                                {activePillar.id === 'EPDS' && epdsData && (
+                                    <div className="mt-2 p-2 bg-blue-100 rounded text-[10px] text-blue-800">
+                                        <strong>Live Check:</strong> {epdsData.stock[0].commodity}: {epdsData.stock[0].quantity} {epdsData.stock[0].unit}
+                                    </div>
+                                )}
+                                {activePillar.id === 'EDPC' && edpcData && (
+                                    <div className="mt-2 p-2 bg-emerald-100 rounded text-[10px] text-emerald-800">
+                                        <strong>Live Check:</strong> Rate: ₹{edpcData.paddy_grade_a} (Grade A)
+                                    </div>
+                                )}
                             </p>
                             <div className="mt-6 flex justify-between items-center relative z-10">
                                 <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-white rounded-full ${activePillar.textColor} border border-slate-100`}>

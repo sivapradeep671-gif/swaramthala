@@ -7,11 +7,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MagneticButton } from '@/components/motion/MagneticButton';
-import { supabase } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { SplitText } from '@/components/motion/SplitText';
 
 export default function LoginPage() {
+  const supabase = createClient();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

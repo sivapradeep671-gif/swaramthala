@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import confetti from 'canvas-confetti';
 
 const FieldOfficerDashboard = () => {
     const navigate = useNavigate();
@@ -7,6 +8,7 @@ const FieldOfficerDashboard = () => {
     const [selectedGodown, setSelectedGodown] = useState(null);
     const [inspection, setInspection] = useState({ moisture: 12, pests: 'None', photos: [] });
     const [isOffline, setIsOffline] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Mock Godowns
     const godowns = [
@@ -21,12 +23,33 @@ const FieldOfficerDashboard = () => {
     };
 
     const submitInspection = () => {
-        if (isOffline) {
-            alert('Saved locally. Will sync when online.');
-        } else {
-            alert('Inspection submitted successfully!');
-        }
-        setStep('SUCCESS');
+        setIsSubmitting(true);
+        // Simulate Network Delay
+        setTimeout(() => {
+            setIsSubmitting(false);
+            setStep('SUCCESS');
+            triggerConfetti();
+        }, 1500);
+    };
+
+    const triggerConfetti = () => {
+        const duration = 3 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        const random = (min, max) => Math.random() * (max - min) + min;
+
+        const interval = setInterval(function () {
+            const timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            const particleCount = 50 * (timeLeft / duration);
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: random(0.1, 0.3), y: Math.random() - 0.2 } }));
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: random(0.7, 0.9), y: Math.random() - 0.2 } }));
+        }, 250);
     };
 
     return (
@@ -60,7 +83,7 @@ const FieldOfficerDashboard = () => {
                                         <p className="text-[10px] font-bold text-slate-400 uppercase">{g.id}</p>
                                         <p className="font-bold text-slate-700">{g.name}</p>
                                     </div>
-                                    <span className="text-slate-300">→</span>
+                                    <span className="text-slate-300 transform group-active:translate-x-1 transition-transform">→</span>
                                 </button>
                             ))}
                         </div>
@@ -130,7 +153,14 @@ const FieldOfficerDashboard = () => {
                                 onClick={submitInspection}
                                 className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-lg shadow-xl shadow-emerald-100"
                             >
-                                Submit Inspection
+                                {isSubmitting ? (
+                                    <div className="flex items-center justify-center gap-2">
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        <span>Submitting...</span>
+                                    </div>
+                                ) : (
+                                    'Submit Inspection'
+                                )}
                             </button>
 
                             <button

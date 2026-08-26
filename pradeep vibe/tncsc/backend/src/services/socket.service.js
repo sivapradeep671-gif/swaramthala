@@ -93,4 +93,11 @@ const startSimulation = () => {
     }, 2000); // 2 second refresh rate
 };
 
-module.exports = { initializeSocket };
+const getIO = () => {
+    if (!io) {
+        throw new Error("Socket.io not initialized!");
+    }
+    return io;
+};
+
+module.exports = { initializeSocket, getIO };

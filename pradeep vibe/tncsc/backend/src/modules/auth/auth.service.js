@@ -1,5 +1,6 @@
 const db = require('../../database/db');
-// const jwt = require('jsonwebtoken'); // Mocking token generation for now
+const jwt = require('jsonwebtoken');
+const config = require('../../config/config');
 
 class AuthService {
     async login(email, password) {
@@ -8,8 +9,12 @@ class AuthService {
 
         if (!user) return null;
 
-        // Mock Token Generation
-        const token = `mock-jwt-token-${user.id}-${Date.now()}`;
+        // Generate Real JWT
+        const token = jwt.sign(
+            { id: user.id, role: user.role, district: user.district },
+            config.jwtSecret,
+            { expiresIn: '1h' }
+        );
 
         // Return safe user object + token
         const { password: _, ...userWithoutPass } = user;

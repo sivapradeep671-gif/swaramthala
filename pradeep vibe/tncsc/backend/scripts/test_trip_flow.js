@@ -1,25 +1,23 @@
-const app = require('../src/main');
-const http = require('http');
+const axios = require('axios');
 
-const PORT = 3002;
+const PORT = 3001;
 const BASE_URL = `http://localhost:${PORT}/api/v1`;
-
-// specific check: Login as HQ Admin -> Create Consignment
-// specific check: Login as Driver -> Start Trip
-// specific check: Login as HQ Admin -> Track Trip
 
 async function runTests() {
     console.log('--- Starting Trip Flow Automation Test ---');
 
-    // Start Server
-    const server = http.createServer(app);
-    await new Promise(resolve => server.listen(PORT, resolve));
-    console.log(`Test Server running on port ${PORT}`);
-
-    // Dynamic import for axios
-    const axios = require('axios');
-
     try {
+        // 0. Login
+        console.log('\n[TEST 0] Authenticating...');
+        const loginRes = await axios.post(`${BASE_URL}/auth/login`, {
+            email: 'admin@tncsc.tn.gov.in',
+            password: 'hash_password'
+        });
+        const token = loginRes.data.data.token;
+        console.log('✅ PASS: Authenticated. Token acquired.');
+
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+
         // 1. Create Consignment (Trip)
         console.log('\n[TEST 1] Creating a new Consignment (Trip)...');
         const createRes = await axios.post(`${BASE_URL}/trips`, {
@@ -27,7 +25,7 @@ async function runTests() {
             driverId: 999,
             origin: 'TEST_GODOWN_A',
             destination: 'TEST_FPS_B'
-        });
+        }, config);
 
         if (createRes.data.success) {
             console.log('✅ PASS: Trip Created with ID:', createRes.data.data.id);
@@ -40,10 +38,9 @@ async function runTests() {
 
         // 2. Start Trip (PATCH Transition)
         console.log(`\n[TEST 2] Starting Trip ${tripId} (State Transition: Created -> Started)...`);
-        const startRes = await axios.patch(`${BASE_URL}/trips/${tripId}`, {
-            status: 'Started',
-            startTime: new Date().toISOString()
-        });
+        // 2. Start Trip (PATCH Transition) - Route is POST /:id/start
+        console.log(`\n[TEST 2] Starting Trip ${tripId} (State Transition: Created -> Started)...`);
+        const startRes = await axios.post(`${BASE_URL}/trips/${tripId}/start`, {}, config);
 
         if (startRes.data.success && startRes.data.data.status === 'Started') {
             console.log('✅ PASS: Trip Status updated to Started');
@@ -84,9 +81,6 @@ async function runTests() {
     } catch (error) {
         console.error('❌ FAIL: Exception during test execution:', error.message);
         if (error.response) console.error('Response data:', error.response.data);
-    } finally {
-        server.close();
-        console.log('\nTest Server Stopped.');
     }
 }
 

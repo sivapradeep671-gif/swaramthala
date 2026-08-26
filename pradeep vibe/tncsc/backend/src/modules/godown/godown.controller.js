@@ -26,6 +26,23 @@ class GodownController {
             res.json({ success: true, data: { ...godown, riskScore } });
         } catch (e) { next(e); }
     }
+
+    async create(req, res, next) {
+        try {
+            const { id, name, district, capacity, manager } = req.body;
+            if (!id || !name || !district) {
+                return res.status(400).json({ success: false, message: 'Missing required fields' });
+            }
+
+            const existing = await godownService.getById(id);
+            if (existing) {
+                return res.status(400).json({ success: false, message: 'Godown ID already exists' });
+            }
+
+            const newGodown = await godownService.create(req.body);
+            res.json({ success: true, message: 'Godown Created Successfully', data: newGodown });
+        } catch (e) { next(e); }
+    }
 }
 
 module.exports = new GodownController();

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import axios from 'axios';
 import L from 'leaflet';
 import { io } from 'socket.io-client';
 import 'leaflet/dist/leaflet.css';
@@ -22,6 +23,7 @@ const FleetMap = () => {
     const [trucks, setTrucks] = useState([]);
     const [socket, setSocket] = useState(null);
     const [selectedTruck, setSelectedTruck] = useState(null);
+    const [routePath, setRoutePath] = useState([]); // Array of [lat, lng]
 
     useEffect(() => {
         // Connect to WebSocket
@@ -35,6 +37,19 @@ const FleetMap = () => {
         return () => newSocket.disconnect();
     }, []);
 
+    // Fetch Route History
+    const fetchRoute = async (tripId) => {
+        try {
+            const res = await axios.get(`/api/trips/${tripId}/route`);
+            if (res.data.success) {
+                const path = res.data.data.map(p => [p.lat, p.lng]);
+                setRoutePath(path);
+            }
+        } catch (error) {
+            console.error("Failed to fetch route:", error);
+        }
+    };
+
     // Center map on Tamil Nadu
     const center = [11.1271, 78.6569];
 
@@ -45,6 +60,17 @@ const FleetMap = () => {
                     url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                 />
+
+                {/* Render Route Polyline */}
+                {selectedTruck && routePath.length > 0 && (
+                    <Polyline
+                        positions={routePath}
+                        color="blue"
+                        weight={4}
+                        opacity={0.7}
+                        dashArray="10, 10"
+                    />
+                )}
 
                 {trucks.map((truck) => (
                     <Marker
@@ -97,7 +123,10 @@ const FleetMap = () => {
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-slate-700">
-                        <button className="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors">
+                        <button
+                            onClick={() => fetchRoute(selectedTruck.tripId || selectedTruck.id)}
+                            className="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors"
+                        >
                             Track Full Route
                         </button>
                     </div>

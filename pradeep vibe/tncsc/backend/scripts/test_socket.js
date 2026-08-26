@@ -1,6 +1,7 @@
 const { io } = require("socket.io-client");
 
-console.log("--- Testing WebSocket Connection ---");
+const axios = require('axios');
+console.log("--- Testing WebSocket Connection (Fleet + Alerts) ---");
 
 const socket = io("http://localhost:3001");
 
@@ -10,15 +11,30 @@ socket.on("connect", () => {
 
 socket.on("fleet_update", (data) => {
     console.log(`✅ Received 'fleet_update' event.`);
-    console.log(`   Truck Count: ${data.length}`);
-    if (data.length > 0) {
-        console.log(`   Sample Truck: ${data[0].id} at [${data[0].lat.toFixed(4)}, ${data[0].lng.toFixed(4)}]`);
-        console.log(`   Status: ${data[0].status}`);
-    }
+    // Don't exit yet, wait for alert
+});
 
+socket.on("new_alert", (alert) => {
+    console.log(`✅ Received 'new_alert' event: ${alert.title}`);
     console.log("Test Passed. Exiting...");
     socket.disconnect();
     process.exit(0);
+});
+
+// Trigger an Alert after connection
+socket.on("connect", async () => {
+    console.log("✅ Connected to WebSocket Server! ID:", socket.id);
+    console.log("⏳ Triggering test alert via API...");
+    try {
+        await axios.post('http://localhost:3001/api/v1/alerts', {
+            priority: 'Test',
+            title: 'Socket Test Alert',
+            location: 'Test Loc',
+            type: 'Test'
+        });
+    } catch (e) {
+        console.error("Failed to trigger alert:", e.message);
+    }
 });
 
 socket.on("connect_error", (err) => {

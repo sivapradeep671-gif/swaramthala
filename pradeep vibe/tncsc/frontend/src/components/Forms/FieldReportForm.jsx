@@ -53,9 +53,12 @@ const FieldReportForm = ({ onClose }) => {
         e.preventDefault();
         setSubmitting(true);
         try {
-            const response = await fetch('/api/reports/field', {
+            const response = await fetch('/api/v1/inspections', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
                 body: JSON.stringify(formData)
             });
             if (response.ok) {

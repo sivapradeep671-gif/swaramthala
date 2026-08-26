@@ -13,6 +13,7 @@ import ToastProvider from './components/Toast';
 import AOSInit from './components/AOSInit';
 import LocomotiveInit from './components/LocomotiveInit';
 import AiAssistant from './components/AiAssistant';
+import VibeComponents from './components/VibeComponents';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
@@ -101,6 +102,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Footer />
         <BottomNav user={user} />
         <ToastProvider />
+        <VibeComponents />
         <Analytics />
         <SpeedInsights />
       </body>

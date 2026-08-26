@@ -19,6 +19,12 @@
   --brand-secondary: #c084fc;
   --brand-glow: rgba(124, 92, 252, 0.35);
 
+  /* High-Tech Vibe Tokens */
+  --vibe-purple: #6B21A8;
+  --vibe-emerald: #10B981;
+  --vibe-teal: #14B8A6;
+  --vibe-glass: rgba(107, 33, 168, 0.08);
+
   /* Per-Category Accents */
   --guitar: #f59e0b;
   --guitar-glow: rgba(245, 158, 11, 0.25);
@@ -102,6 +108,36 @@ body {
   overflow-x: hidden;
   /* Prevent blue tap highlight on mobile */
   -webkit-tap-highlight-color: transparent;
+}
+
+/* 🧪 High-Tech Background Component */
+.vibe-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('/app-bg.png');
+  background-size: cover;
+  background-position: center;
+  z-index: -2;
+  transform: scale(1.05); /* For parallax scroll */
+  opacity: 0.6;
+}
+
+.vibe-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, transparent 0%, var(--bg-primary) 100%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+@media (max-width: 1024px) {
+  .vibe-bg { transform: scale(1); opacity: 0.4; }
 }
 
 /* Disable selection for nav and buttons to feel native */

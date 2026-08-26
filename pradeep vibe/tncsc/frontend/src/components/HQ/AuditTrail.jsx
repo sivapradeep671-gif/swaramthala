@@ -1,12 +1,22 @@
-import React from 'react';
+import axios from 'axios';
+import { useState, useEffect } from 'react';
 
 const AuditTrail = () => {
-    const logs = [
-        { id: 1, action: 'STOCK_MOVEMENT', details: '10 tons rice moved from TNJ001 to CHE009', timestamp: '2025-12-23 09:00 AM', hash: '5f3c...8e21' },
-        { id: 2, action: 'INSPECTION_RECORDED', details: 'High moisture (18%) detected at TVR008', timestamp: '2025-12-23 11:30 AM', hash: '9b1a...2d4f' },
-        { id: 3, action: 'TRIP_STARTED', details: 'Truck TN-45-AQ-1234 departed from Thanjavur', timestamp: '2025-12-23 12:15 PM', hash: 'ac32...ff10' },
-        { id: 4, action: 'ALERT_ESCALATED', details: 'SLA breach for Incident #002 assigned to R. Suresh', timestamp: '2025-12-23 02:00 PM', hash: 'e5d4...bb99' }
-    ];
+    const [logs, setLogs] = useState([]);
+
+    useEffect(() => {
+        const fetchLogs = async () => {
+            try {
+                const res = await axios.get('/api/admin/audit-logs');
+                if (res.data.success) {
+                    setLogs(res.data.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch audit logs", error);
+            }
+        };
+        fetchLogs();
+    }, []);
 
     return (
         <div className="bg-slate-50 p-8 rounded-2xl border border-slate-200 font-mono text-[10px]">

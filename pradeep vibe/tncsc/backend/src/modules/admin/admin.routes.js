@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../../database/db');
+const { protect, authorize } = require('../../middleware/auth.middleware');
+
+// Protect all routes
+router.use(protect);
+router.use(authorize('Admin', 'HQAnalyst'));
 
 // --- User Management ---
 
@@ -33,6 +38,14 @@ router.delete('/users/:id', async (req, res) => {
     } else {
         res.status(404).json({ success: false, message: 'User not found' });
     }
+});
+
+// Get Audit Logs
+router.get('/audit-logs', async (req, res) => {
+    // Get last 20 logs, sorted by timestamp desc
+    const logs = await db.find('auditLog');
+    const sortedLogs = logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 20);
+    res.json({ success: true, data: sortedLogs });
 });
 
 // --- System Configuration ---

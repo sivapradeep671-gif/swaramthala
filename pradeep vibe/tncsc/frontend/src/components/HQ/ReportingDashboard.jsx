@@ -1,7 +1,29 @@
 import React, { useState } from 'react';
 
+import axios from 'axios';
+
 const ReportingDashboard = () => {
     const [loading, setLoading] = useState(false);
+    const [stats, setStats] = useState({
+        slaCompliance: "94%",
+        spoilagePreventedValue: "₹ 4.2 Cr",
+        activeAlerts: 0,
+        highRiskGodowns: 0
+    });
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                const res = await axios.get('/api/reports/dashboard');
+                if (res.data.success) {
+                    setStats(res.data.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch dashboard stats", error);
+            }
+        };
+        fetchDashboardData();
+    }, []);
 
     const handleDownload = (reportType) => {
         setLoading(true);
@@ -30,7 +52,11 @@ const ReportingDashboard = () => {
             <div className="bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden">
                 <div className="relative z-10">
                     <h2 className="text-2xl font-black uppercase tracking-tight">Analytical Command Center</h2>
-                    <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mt-1">SLA Compliance: 94% • Total Spoilage Prevented: ₹ 4.2 Cr</p>
+                    <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mt-1">SLA Compliance: {stats.slaCompliance} • Prevented Loss: {stats.spoilagePreventedValue}</p>
+                    <div className="mt-4 flex gap-4 text-xs">
+                        <span className="bg-red-500/20 text-red-400 px-2 py-1 rounded">High Risk Sites: {stats.highRiskGodowns}</span>
+                        <span className="bg-orange-500/20 text-orange-400 px-2 py-1 rounded">Active Alerts: {stats.activeAlerts}</span>
+                    </div>
                 </div>
                 <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl">📈</div>
             </div>

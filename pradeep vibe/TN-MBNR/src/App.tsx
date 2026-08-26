@@ -1,133 +1,315 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { Navbar } from './components/Navbar';
-import { Hero } from './components/Hero';
+import { Hero } from './components/HeroBrand';
 import { ImpactMatrix } from './components/ImpactMatrix';
-import { BusinessRegistration } from './components/BusinessRegistration';
-import { MapExplorer } from './components/MapExplorer';
-import { CitizenReport } from './components/CitizenReport';
-import type { Business } from './types/types';
+import { LanguageProvider } from './context/LanguageContext';
+import { FeedbackButton } from './components/FeedbackButton';
+import { Login } from './components/Login';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { useBusinesses } from './hooks/useBusinesses';
+import { ToastContainer } from './components/Toast';
+import { api } from './api/client';
+import { Mail, Shield, Zap, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useLanguage } from './context/LanguageContext';
 
-const mockBusinessData: Business[] = [
-  {
-    id: '1',
-    legalName: 'Sri Krishna Sweets Pvt Ltd',
-    tradeName: 'Sri Krishna Sweets',
-    type: 'Private Limited',
-    address: '123, M.G. Road, Adyar, Chennai',
-    branchName: 'Adyar Branch',
-    contactNumber: '9876543210',
-    email: 'contact@srikrishnasweets.com',
-    status: 'Verified',
-    registrationDate: '2023-01-15',
-    riskScore: 5,
-  },
-  {
-    id: '2',
-    legalName: 'A2B Adyar Ananda Bhavan',
-    tradeName: 'A2B',
-    type: 'Private Limited',
-    address: '45, Anna Salai, T. Nagar, Chennai',
-    branchName: 'T. Nagar Branch',
-    contactNumber: '9876543211',
-    email: 'info@a2b.com',
-    status: 'Verified',
-    registrationDate: '2023-02-20',
-    riskScore: 2,
-  }
-];
+const APP_VERSION = '1.2.0 (Dual-Theme Build)';
+import { config } from './config';
+import type { GlobalHandlers } from './types/types';
+import { SaaSProvider, useSaaS } from './context/SaaSContext';
+import { AccessibilityToolbar } from './components/AccessibilityToolbar';
 
-function App() {
+// Tell TypeScript about our custom window properties
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  interface Window extends GlobalHandlers {}
+}
+
+// Lazy load feature components for better performance
+const BusinessRegistration = lazy(() => import('./components/BusinessRegistration').then(m => ({ default: m.BusinessRegistration })));
+const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
+const MapExplorer = lazy(() => import('./components/MapExplorer').then(m => ({ default: m.MapExplorer })));
+const CitizenReport = lazy(() => import('./components/CitizenReport').then(m => ({ default: m.CitizenReport })));
+const QRScanner = lazy(() => import('./components/QRScanner').then(m => ({ default: m.QRScanner })));
+const CitizenRegistration = lazy(() => import('./components/CitizenRegistration').then(m => ({ default: m.CitizenRegistration })));
+const BlockchainExplorer = lazy(() => import('./components/BlockchainExplorer').then(m => ({ default: m.BlockchainExplorer })));
+const PublicRegistry = lazy(() => import('./components/PublicRegistry').then(m => ({ default: m.PublicRegistry })));
+const TechArchitecture = lazy(() => import('./components/TechArchitecture').then(m => ({ default: m.TechArchitecture })));
+const HackathonJury = lazy(() => import('./components/HackathonJury').then(m => ({ default: m.HackathonJury })));
+const DemoControls = lazy(() => import('./components/DemoControls'));
+const MerchantDashboard = lazy(() => import('./components/MerchantDashboard').then(m => ({ default: m.MerchantDashboard })));
+const InspectorDashboard = lazy(() => import('./components/InspectorDashboard').then(m => ({ default: m.InspectorDashboard })));
+const ExecutiveDashboard = lazy(() => import('./components/ExecutiveDashboard').then(m => ({ default: m.ExecutiveDashboard })));
+const AIAssistant = lazy(() => import('./components/extensions/AIAssistant'));
+const SaaSMarketplace = lazy(() => import('./components/SaaSMarketplace').then(m => ({ default: m.SaaSMarketplace })));
+const B2BMarketplace = lazy(() => import('./components/B2BMarketplace').then(m => ({ default: m.B2BMarketplace })));
+const SaaSPricing = lazy(() => import('./components/SaaSPricing').then(m => ({ default: m.SaaSPricing })));
+const SaaSAdmin = lazy(() => import('./components/SaaSAdmin').then(m => ({ default: m.SaaSAdmin })));
+const BusinessHealthDashboard = lazy(() => import('./components/BusinessHealthScore').then(m => ({ default: m.BusinessHealthDashboard })));
+const GrievanceRedressal = lazy(() => import('./components/GrievanceRedressal').then(m => ({ default: m.GrievanceRedressal })));
+
+
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-[calc(100vh-160px)] flex flex-col items-center justify-center p-8 relative overflow-hidden">
+        <div className="absolute inset-0 mesh-gradient opacity-5 animate-pulse" />
+        
+        <div className="relative z-10 flex flex-col items-center">
+            <div className="relative mb-12">
+                <div className="absolute inset-0 bg-yellow-500 blur-[80px] opacity-10 animate-pulse" />
+                <div className="relative w-24 h-24 flex items-center justify-center">
+                    <div className="absolute inset-0 border-4 border-yellow-500/20 border-t-yellow-500 rounded-full animate-spin-slow" />
+                    <div className="absolute inset-3 border-2 border-slate-700 border-b-yellow-500/30 rounded-full animate-spin-reverse" />
+                    <Shield className="h-10 w-10 text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]" />
+                </div>
+            </div>
+
+            <div className="space-y-6 text-center max-w-sm">
+                <div className="flex flex-col gap-2">
+                     <p className="text-yellow-500 font-black text-[10px] uppercase tracking-[0.4em] animate-pulse">
+                        Authenticating Nodal Trust...
+                    </p>
+                    <div className="h-1 w-48 bg-white/5 rounded-full mx-auto overflow-hidden border border-white/5">
+                        <div className="h-full bg-yellow-500 animate-progress-infinite shadow-[0_0_10px_rgba(234,179,8,1)]" />
+                    </div>
+                </div>
+                <div className="mt-8 grid grid-cols-3 gap-8 opacity-40">
+                     {['REGISTRY', 'BLOCKCHAIN', 'AI_NODE'].map(node => (
+                         <div key={node} className="flex flex-col items-center gap-2">
+                             <div className="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,1)] animate-ping" />
+                             <span className="text-[6.5px] font-black text-slate-500 uppercase tracking-widest">{node}</span>
+                         </div>
+                     ))}
+                </div>
+            </div>
+        </div>
+    </div>
+  );
+}
+
+function AppContent() {
+  const { t } = useLanguage();
+  const { user, isLoading: authLoading } = useAuth();
+  const { currentTenant } = useSaaS();
+  const { businesses, reports, updateStatus, registerBusiness } = useBusinesses();
+  
   const [currentView, setCurrentView] = useState('HOME');
-  const [businesses, setBusinesses] = useState<Business[]>(mockBusinessData);
+  const [reportPrefill, setReportPrefill] = useState<string>('');
+  const [isBackendOffline, setIsBackendOffline] = useState(false);
 
+    // Health check for backend
+    useEffect(() => {
+        const checkBackend = async () => {
+            const isOnline = await api.checkHealth();
+            if (!isOnline) {
+                if (import.meta.env.DEV) {
+                    console.warn('Security Advisory: API Grid Offline — Operating on Local Node Fallback');
+                }
+                queueMicrotask(() => setIsBackendOffline(true));
+            }
+        };
+        checkBackend();
+    }, []);
+
+  // Strict View protection & Role-based routing
   useEffect(() => {
-    const fetchBusinesses = async () => {
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-        const response = await fetch(`${apiUrl}/api/businesses`);
-        if (response.ok) {
-          const data = await response.json();
-          // Ensure data.data is an array before setting
-          if (Array.isArray(data.data)) {
-            setBusinesses(data.data);
-          }
-        } else {
-          console.warn("Failed to fetch businesses from API, falling back to mock data.");
-          setBusinesses(mockBusinessData);
-        }
-      } catch (error) {
-        console.error("Failed to fetch businesses:", error);
-        // Fallback to mock data if backend is not running or network error
-        setBusinesses(mockBusinessData);
+    const publicViews = ['HOME', 'MAP', 'SCAN', 'REGISTRY', 'HEALTH_SCORE', 'MARKETPLACE', 'B2B_MARKETPLACE', 'PRICING', 'LOGIN', 'REGISTER_CITIZEN', 'REGISTER', 'REPORT', 'GRIEVANCE'];
+    
+    // If not logged in and trying to access a protected view, redirect to login
+    if (!user && !publicViews.includes(currentView)) {
+      setTimeout(() => setCurrentView('LOGIN'), 0);
+      return;
+    }
+
+    if (user) {
+      // Citizen restrictions
+      if (user.role === 'citizen' && ['DASHBOARD', 'INSPECTOR_DASHBOARD', 'EXECUTIVE_DASHBOARD', 'SAAS_ADMIN'].includes(currentView)) {
+        setTimeout(() => setCurrentView('HOME'), 0);
+      }
+      // Business restrictions
+      if (user.role === 'business' && ['REPORT', 'INSPECTOR_DASHBOARD', 'EXECUTIVE_DASHBOARD', 'SAAS_ADMIN'].includes(currentView)) {
+        setTimeout(() => setCurrentView('HOME'), 0);
+      }
+      // Inspector restrictions
+      if (user.role === 'inspector' && ['EXECUTIVE_DASHBOARD', 'SAAS_ADMIN'].includes(currentView)) {
+        setTimeout(() => setCurrentView('HOME'), 0);
+      }
+    }
+  }, [user, currentView]);
+
+  // Clean implementation of cross-component triggers
+  useEffect(() => {
+    const handlers = {
+      onReportBusiness: (name: string) => {
+        setReportPrefill(name);
+        setCurrentView('REPORT');
+      },
+      onOpenCitizenReg: () => {
+        setCurrentView('REGISTER_CITIZEN');
       }
     };
 
-    fetchBusinesses();
+    Object.assign(window, handlers);
+    return () => {
+      Object.keys(handlers).forEach(key => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        delete (window as any)[key];
+      });
+    };
   }, []);
 
-  const handleRegister = async (newBusiness: Business) => {
-    try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${apiUrl}/api/businesses`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newBusiness),
-      });
-
-      if (response.ok) {
-        setBusinesses(prev => [newBusiness, ...prev]);
-        setCurrentView('HOME');
-        alert("Business Registered Successfully!");
-      } else {
-        alert("Failed to register business. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error registering business:", error);
-      // Fallback for demo without backend
-      setBusinesses(prev => [newBusiness, ...prev]);
-      setCurrentView('HOME');
-      alert("Business Registered (Demo Mode - Backend Unreachable)!");
-    }
+  const handleLoginSuccess = (role: string) => {
+    setCurrentView(role === 'citizen' ? 'HOME' : 'DASHBOARD');
   };
 
   const renderContent = () => {
-    switch (currentView) {
-      case 'HOME':
-        return (
-          <>
-            <Hero onRegister={() => setCurrentView('REGISTER')} />
-            <ImpactMatrix />
-          </>
-        );
-      case 'REGISTER':
-        return (
-          <BusinessRegistration
-            existingBusinesses={businesses}
-            onRegister={handleRegister}
-          />
-        );
-      case 'MAP':
-        return <MapExplorer businesses={businesses} />;
-      case 'REPORT':
-        return <CitizenReport />;
-      default:
-        return <Hero onRegister={() => setCurrentView('REGISTER')} />;
-    }
+    return (
+      <Suspense fallback={<LoadingFallback />}>
+        {(() => {
+          switch (currentView) {
+            case 'HOME':
+              return (
+                <>
+                  <Hero 
+                    onRegister={() => setCurrentView('REGISTER')} 
+                    onScan={() => setCurrentView('SCAN')} 
+                    onCitizenRegister={() => setCurrentView('REGISTER_CITIZEN')} 
+                    onExploreMap={() => setCurrentView('MAP')}
+                  />
+                  <ImpactMatrix />
+                  <HackathonJury />
+                  <TechArchitecture />
+                </>
+              );
+            case 'REGISTER':
+              return <BusinessRegistration onRegister={registerBusiness} businesses={businesses} />;
+            case 'MAP':
+              return <MapExplorer businesses={businesses} reports={reports} />;
+            case 'REPORT':
+              return <CitizenReport prefillName={reportPrefill} />;
+            case 'SCAN':
+              return <QRScanner businesses={businesses} />;
+            case 'REGISTER_CITIZEN':
+              return <CitizenRegistration onComplete={() => setCurrentView('HOME')} />;
+            case 'LEDGER':
+              return <BlockchainExplorer businesses={businesses} />;
+            case 'REGISTRY':
+              return <PublicRegistry businesses={businesses} />;
+            case 'LOGIN':
+              return <Login onLoginSuccess={handleLoginSuccess} />;
+            case 'MARKETPLACE':
+              return <SaaSMarketplace />;
+            case 'B2B_MARKETPLACE':
+              return <B2BMarketplace businesses={[]} setCurrentView={setCurrentView} />;
+            case 'PRICING':
+              return <SaaSPricing />;
+            case 'SAAS_ADMIN':
+              return <SaaSAdmin />;
+            case 'DASHBOARD':
+              if (user?.role === 'business') {
+                const business = businesses.find(b => b.id === user.id) || businesses[0];
+                return <MerchantDashboard business={business} setCurrentView={setCurrentView} />;
+              }
+              if (user?.role === 'inspector') {
+                return <InspectorDashboard businesses={businesses} onUpdateStatus={updateStatus} />;
+              }
+              if (user?.role === 'executive') {
+                return <ExecutiveDashboard businesses={businesses} reports={reports} />;
+              }
+              return <Dashboard businesses={businesses} reports={reports} onUpdateStatus={updateStatus} />;
+            case 'INSPECTOR_DASHBOARD':
+                return <InspectorDashboard businesses={businesses} onUpdateStatus={updateStatus} />;
+            case 'EXECUTIVE_DASHBOARD':
+                return <ExecutiveDashboard businesses={businesses} reports={reports} />;
+            case 'HEALTH_SCORE':
+                return <BusinessHealthDashboard />;
+            case 'GRIEVANCE':
+                return <GrievanceRedressal businesses={businesses} />;
+            default:
+              return (
+                <Hero 
+                  onRegister={() => setCurrentView('REGISTER')} 
+                  onScan={() => setCurrentView('SCAN')} 
+                  onCitizenRegister={() => setCurrentView('REGISTER_CITIZEN')} 
+                  onExploreMap={() => setCurrentView('MAP')}
+                />
+              );
+          }
+        })()}
+      </Suspense>
+    );
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-yellow-500/30">
+    <div className={`min-h-screen bg-slate-950 text-white font-sans selection:bg-yellow-500/30 transition-all duration-500 ${isBackendOffline ? 'pt-24' : 'pt-20'}`}>
+      <ToastContainer />
+      
+      {/* Universal Priority Banner Stack */}
+      <div className="fixed top-0 left-0 w-full z-[60] flex flex-col">
+        <AccessibilityToolbar />
+        <div className="w-full bg-yellow-500/95 text-slate-900 text-[9px] font-black py-1.5 px-4 text-center tracking-[0.3em] uppercase border-b border-yellow-600/20">
+          ⚠️ PROTOTYPE DEMONSTRATION | {t.footer.disclaimer_banner} | {currentTenant.name} Platform v{APP_VERSION}
+        </div>
+      </div>
+
       <Navbar currentView={currentView} setCurrentView={setCurrentView} />
+      
       <main>
-        {renderContent()}
+        {authLoading ? (
+          <div className="min-h-[calc(100vh-80px)] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="h-12 w-12 border-4 border-yellow-500/20 border-t-yellow-500 rounded-full animate-spin"></div>
+              <p className="text-slate-400 font-mono text-xs uppercase tracking-widest">Verifying Identity...</p>
+            </div>
+          </div>
+        ) : (
+          renderContent()
+        )}
       </main>
 
-      <footer className="bg-slate-950 border-t border-slate-900 py-8 text-center text-slate-500 text-sm">
-        <p>© 2024 Tamil Nadu Municipal Business Name Revolution (TN-MBNR). All rights reserved.</p>
+      <Suspense fallback={null}>
+        <AIAssistant />
+      </Suspense>
+
+      <footer className="max-w-4xl mx-auto px-4 py-12 text-center">
+        <p className="mb-4 text-slate-400 font-medium italic">"Scan once, know the truth."</p>
+        <div className="flex justify-center space-x-6 mb-8">
+          <a href="mailto:project.pilot@gmail.com" className="p-2.5 bg-slate-900 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-all shadow-lg border border-slate-800" title="Email Us">
+            <Mail className="h-5 w-5" />
+          </a>
+          <a href="#" className="p-2.5 bg-slate-900 rounded-full text-slate-400 hover:text-blue-400 hover:bg-slate-800 transition-all shadow-lg border border-slate-800" title="View Source">
+            <Shield className="h-5 w-5" />
+          </a>
+          <a href="#" className="p-2.5 bg-slate-900 rounded-full text-slate-400 hover:text-yellow-500 hover:bg-slate-800 transition-all shadow-lg border border-slate-800" title="Official Dashboard">
+            <Zap className="h-5 w-5" />
+          </a>
+        </div>
+        <p className="text-slate-500 text-sm mb-4">{t.footer.rights}</p>
+        <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800 inline-block">
+          <p className="text-[10px] text-slate-500 leading-relaxed max-w-lg mx-auto uppercase tracking-tighter" dangerouslySetInnerHTML={{ __html: t.footer.disclaimer.replace('DISCLAIMER:', '<strong>DISCLAIMER:</strong>').replace('NOT', '<strong>NOT</strong>').replace('பொறுப்புத் துறப்பு:', '<strong>பொறுப்புத் துறப்பு:</strong>').replace('அல்ல', '<strong>அல்ல</strong>') }}>
+          </p>
+        </div>
+        <p className="mt-4 text-[10px] text-slate-700">v{APP_VERSION}</p>
       </footer>
+      <FeedbackButton />
+      <Suspense fallback={null}>
+      </Suspense>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <ThemeProvider>
+        <SaaSProvider>
+          <LanguageProvider>
+            <AppContent />
+          </LanguageProvider>
+        </SaaSProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 
